@@ -26,31 +26,6 @@ if (storeNos != null && storeNos.Count > 0)
         parameters.Add(new SqlParameter("@tag" + i, storeNos[i]));
     }
 }
-if (!string.IsNullOrEmpty(throwStatus))
-{
-    switch (throwStatus)
-    {
-        case "0":
-            sb.AppendLine(" and a.StatusCode<@statuscode");
-            parameters.Add(new SqlParameter("@statuscode", (int)StatusCode.Throw));
-            break;
-        case "1":
-            sb.AppendLine(" and a.StatusCode>=@statuscode");
-            parameters.Add(new SqlParameter("@statuscode", (int)StatusCode.Throw));
-            break;
-    }
-}
-if (!string.IsNullOrEmpty(ReceivedStatus))
-{
-    switch (ReceivedStatus)
-    {
-        case "0":
-            sb.AppendLine(" and d.No is null");
-            break;
-        case "1":
-            sb.AppendLine(" and d.No is not null");
-            break;
-    }
-}
+
 sql = string.Format(sql, sb.ToString());
 var query = con.Database.SqlQuery<OrderColumn>(sql, parameters.ToArray()).ToList();
