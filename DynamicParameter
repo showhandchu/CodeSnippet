@@ -1,0 +1,56 @@
+string sql = @"select * from customers where 1=1 {0}";
+
+StringBuilder sb = new StringBuilder();
+var parameters = new List<SqlParameter>();
+if (startDate.HasValue)
+{
+    sb.AppendLine(" and a.ExpectScheduleDate>=@start");
+    parameters.Add(new SqlParameter("@start", startDate.Value.ToString("yyyy/MM/dd")));
+}
+if (endDate.HasValue)
+{
+    sb.AppendLine(" and a.ExpectScheduleDate<@end");
+    parameters.Add(new SqlParameter("@end", endDate.Value.AddDays(1).ToString("yyyy/MM/dd")));
+}
+if (!string.IsNullOrEmpty(supplierCode))
+{
+    sb.AppendLine(" and a.SupplierCode=@supplierCode");
+    parameters.Add(new SqlParameter("@supplierCode", supplierCode));
+}
+if (storeNos != null && storeNos.Count > 0)
+{
+    string[] paramNames = storeNos.Select((s, i) => "@tag" + i.ToString()).ToArray();
+    sb.AppendLine(" and c.StoreNo in (" + string.Join(",", paramNames) + ")");
+    for (var i = 0; i < storeNos.Count; i++)
+    {
+        parameters.Add(new SqlParameter("@tag" + i, storeNos[i]));
+    }
+}
+if (!string.IsNullOrEmpty(throwStatus))
+{
+    switch (throwStatus)
+    {
+        case "0":
+            sb.AppendLine(" and a.StatusCode<@statuscode");
+            parameters.Add(new SqlParameter("@statuscode", (int)StatusCode.Throw));
+            break;
+        case "1":
+            sb.AppendLine(" and a.StatusCode>=@statuscode");
+            parameters.Add(new SqlParameter("@statuscode", (int)StatusCode.Throw));
+            break;
+    }
+}
+if (!string.IsNullOrEmpty(ReceivedStatus))
+{
+    switch (ReceivedStatus)
+    {
+        case "0":
+            sb.AppendLine(" and d.No is null");
+            break;
+        case "1":
+            sb.AppendLine(" and d.No is not null");
+            break;
+    }
+}
+sql = string.Format(sql, sb.ToString());
+var query = con.Database.SqlQuery<OrderColumn>(sql, parameters.ToArray()).ToList();
