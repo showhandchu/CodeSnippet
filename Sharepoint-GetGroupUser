@@ -1,4 +1,4 @@
-Build {...} Dictionary (Output to 變數:requestHeader )
+Build _{...} Dictionary (Output to 變數:requestHeader )
 	Accept	application/json;odata=verbose
 	Content-Type	application/json;odata=verbose
 
