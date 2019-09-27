@@ -1,0 +1,18 @@
+Build {...} Dictionary (Output to 變數:requestHeader )
+	Accept	application/json;odata=verbose
+	Content-Type	application/json;odata=verbose
+
+Set 變數: requestUrl to [%工作流程內容:目前網站 URL%]/_api/web/sitegroups/getbyname('[%目前項目:CurApproveGroup%]')/users
+Call [%變數: requestUrl%] HTTP web service with request (ResponseContent to 變數: jsonResponse |ResponseHeaders to 變數: requestHeader |ResponseStatusCode to 變數: responseCode )
+If 變數: responseCode equals OK
+	Get d/results from 變數: jsonResponse (Output to 變數: dataSet )
+	Set 變數: count to 0
+	Count Items in 變數: dataSet (Output to 變數: dataSetCount )
+	迴圈: 2
+	在下列條件時此迴圈的內容會重複執行: 變數: count is less than 變數: dataSetCount
+		Get ([%變數: count%])/LoginName from 變數: dataSet (Output to 變數: loginName )
+		Calculate 變數: count plus 1 (Output to 變數: calc )
+		Set 變數: count to 變數: calc
+		Set 變數: groupMembers to [%變數: groupMembers%],[%變數: loginName%]
+	Set GroupMembers to 變數: groupMembers
+	Set CallRestApi to complete
