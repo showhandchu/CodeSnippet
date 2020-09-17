@@ -1,0 +1,19 @@
+
+First, check if tsc is installed correctly. Open cmd.exe and type the following.
+
+%AppData%\npm\node_modules\typescript\bin\tsc --version
+If there is a version log, then tsc is installed successfully.
+
+The next thing is to add it in PATH. Write in cmd.exe
+
+setx path "%path%;%AppData%\npm\node_modules\.bin\"
+This should solve the issue.
+
+However, if the first command did not log the version,
+
+Check the install location using
+
+npm list -g
+If typescript appears in the output, copy the location to the PATH as
+
+setx path "%path%;<--the tsc.exe path-->"
