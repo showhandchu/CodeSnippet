@@ -208,3 +208,108 @@ function checkGroup(currentGroup) {
     }
     return result;
 }
+
+//XML query
+var caml = '<OrderBy><FieldRef Name="ID" Ascending="FALSE"/></OrderBy><Where><Eq><FieldRef Name="Creator"/><Value Type="Text">' + userDisplayName + '</Value></Eq></Where>';
+var viewXml = '<View><Query>' + queryText + '</Query></View>';
+var url = webUrl + "/_api/web/lists/getbytitle('" + listTitle + "')/getitems";
+var queryPayload = {
+    'query': {
+        '__metadata': { 'type': 'SP.CamlQuery' },
+        'ViewXml': viewXml
+    }
+};
+header = null;
+method = "POST";
+headers = headers || {};
+headers["Accept"] = "application/json;odata=verbose";
+if (method == "POST") {
+    headers["X-RequestDigest"] = $("#__REQUESTDIGEST").val();
+}
+var ajaxOptions =
+{
+    url: url,
+    type: method,
+    contentType: "application/json;odata=verbose",
+    headers: headers
+};
+if (typeof payload != 'undefined') {
+    ajaxOptions.data = JSON.stringify(payload);
+}
+return $.ajax(ajaxOptions);
+
+//Send Email
+var receiversObj = 'xxxxx.xxx@xxxx.com';
+//MailBody = '<p>Hello ,<p> <p>This is for test.</p><p>Thanks</p>';
+//MailSubject = 'New email notitication have been send by automaticaly';
+var taMailBody = {
+    properties: {
+        __metadata: { 'type': 'SP.Utilities.EmailProperties' },
+        //From: "",
+        To: { 'results': [receiversObj] },
+        Subject: mailSubject,
+        Body: mailBody
+    }
+};
+
+$.ajax({
+    contentType: 'application/json',
+    url: _spPageContextInfo.webAbsoluteUrl + "/_api/SP.Utilities.Utility.SendEmail",
+    type: "POST",
+    data: JSON.stringify(taMailBody),
+    headers: {
+        "Accept": "application/json;odata=verbose",
+        "content-type": "application/json;odata=verbose",
+        "X-RequestDigest": $("#__REQUESTDIGEST").val()
+    },
+    success: function (data) {
+        console.log("Success");
+    },
+    error: function (data) {
+
+        console.log("Error: " + JSON.stringify(data));
+    }
+});
+
+//get  work flow
+function GetWorkflows(itemId) {
+    return $.ajax({
+        url: _spPageContextInfo.webAbsoluteUrl + "/_api/SP.WorkflowServices.WorkflowInstanceService.Current/EnumerateInstancesForListItem(listId='" + listId + "',itemId='" + itemId + "')",
+        method: "POST",
+        headers: {
+            "Accept": "application/json;odata=verbose",
+            "content-type": "application/json;odata=verbose",
+            "X-RequestDigest": $("#__REQUESTDIGEST").val(),
+        },
+        success: function (data) {
+            
+        },
+        error: function (data) {
+
+            console.log("GetWorkflows Error: " + JSON.stringify(data));
+        }
+    });
+}
+
+//start work flow
+function StartWorkflow(itemId) {
+    return $.ajax({
+        url: _spPageContextInfo.webAbsoluteUrl + "/_api/SP.WorkflowServices.WorkflowInstanceService.Current/StartWorkflowOnListItemBySubscriptionId(subscriptionId='" + itemCreateWorkFlowSubscriptionId + "',itemId='" + itemId + "')",
+        method: "POST",
+        headers: {
+            "Accept": "application/json;odata=verbose",
+            "content-type": "application/json;odata=verbose",
+            "X-RequestDigest": $("#__REQUESTDIGEST").val(),
+            "X-HTTP-Method": "POST",
+            "If-Match": "*",
+            "X-Http-Method": "MERGE"
+        },
+        success: function (data) {
+
+        },
+        error: function (data) {
+
+            console.log("StartWorkflow Error: " + JSON.stringify(data));
+        }
+    });
+}
