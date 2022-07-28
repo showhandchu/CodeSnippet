@@ -1,0 +1,31 @@
+//Download file from sharepint
+ClientContext clientContext = new ClientContext(SiteUrl);
+clientContext.Credentials = new SharePointOnlineCredentials(account, password);
+
+Web web = clientContext.Web;
+Microsoft.SharePoint.Client.File filetoDownload = web.GetFileByServerRelativeUrl(fileUrl);
+clientContext.Load(filetoDownload);
+clientContext.ExecuteQuery();
+var fileRef = filetoDownload.ServerRelativeUrl;
+var fileInfo = Microsoft.SharePoint.Client.File.OpenBinaryDirect(clientContext, fileRef);
+filePath = Path.Combine(filePath, (string)filetoDownload.Name);
+
+using (var fileStream = System.IO.File.Create(filePath))
+{
+    fileInfo.Stream.CopyTo(fileStream);
+}
+
+//Upload file to Sharepoint
+ClientContext clientContext = new ClientContext(SiteUrl);
+clientContext.Credentials = new SharePointOnlineCredentials(account, password);
+
+var fileCreationInfo = new FileCreationInformation
+{
+    Content = System.IO.File.ReadAllBytes(uploadFilePath),
+    Overwrite = true,
+    Url = Path.GetFileName(uploadFilePath)
+};
+var targetFolder = context.Web.GetFolderByServerRelativeUrl(uploadFolderUrl);
+var uploadFile = targetFolder.Files.Add(fileCreationInfo);
+context.Load(uploadFile);
+context.ExecuteQuery();
