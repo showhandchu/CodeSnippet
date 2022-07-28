@@ -1,0 +1,28 @@
+//json string to JObject
+JObject jo = JObject.Parse(jsonString);
+
+//Add object to Jarray
+JArray array = new JArray();
+JObject obj = new JObject();
+obj.Add("Name", row.Name);
+obj.Add("No", row.No);
+array.Add(obj);
+
+//Compare two JArray, return true or false
+JToken.DeepEquals(old, newArray)
+
+//JToken to JArray
+var jArray = jToken.ToObject<JArray>();
+
+//loop JArray
+foreach (var arr in jArray)
+{ 
+    string no = arr["No"].ToString();
+    string name = arr["Name"].ToString();
+}
+
+//get all keys
+IList<string> keys = x.ToObject<JObject>().Properties().Select(p => p.Name).ToList();
+
+//check value in JArray
+jArray.Any(y => y["No"].ToString() == no);
