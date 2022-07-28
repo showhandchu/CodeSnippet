@@ -19,6 +19,8 @@ foreach (var arr in jArray)
 { 
     string no = arr["No"].ToString();
     string name = arr["Name"].ToString();
+    //change value
+    arr["Disabled"] = "true";
 }
 
 //get all keys
