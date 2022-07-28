@@ -47,6 +47,22 @@ function GetUserId(userName) {
     });
 }
 
+//another way to get user id
+var username="xxx, xxxxx";
+var requestUri = _spPageContextInfo.webAbsoluteUrl+"/_api/web/SiteUserInfoList/items?$select=Id,Title,Office&$filter=Title eq '"+username+"'";
+//execute AJAX request
+$.ajax({
+    url: requestUri,
+    type: "GET",
+    headers: { "ACCEPT": "application/json;odata=verbose" },
+    success: function (data) {
+        console.info(data);
+    },
+    error: function () {
+        //alert("Failed to get details");
+    }
+});
+
 //Create list item
 $.ajax({
     // _spPageContextInfo.webAbsoluteUrl - will give absolute URL of the site where you are running the code.
