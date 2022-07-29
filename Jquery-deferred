@@ -47,6 +47,46 @@
             }, 2000);
             //return $d.promise();
         }
+        
+        //Deferred 不同寫法
+        var promise = $.Deferred(function(deferred) {
+            setTimeout(function() {
+                // ...
+                deferred.resolve('DEMO');
+            }, 3000);
+        }).promise();
+        
+        //底下為另一種寫法
+        var postImage = function(xx) {
+            return $.Deferred(function(dfd){
+                $.post("", {})
+                .success(function(data){
+                  if ( 1==1) {
+                    dfd.notify(data);
+                    dfd.resolve(data);
+                  } else {
+                    dfd.notify(data);
+                    dfd.reject(data);
+                  }
+                })
+                .error(function(){
+                  dfd.reject('ajax error');
+                });
+              }).promise();
+        };
+        tasks.push(postImage(xx));
+        $.when.apply($, tasks)
+          .then(function(){
+            
+          })
+          .progress(function(data){
+              done++;
+              var per = ( done / total ) * 100;
+              $('bar').css('width', per+'%');
+          })
+          .fail(function(){
+          });
+        };
     </script>
 </body>
 </html>
