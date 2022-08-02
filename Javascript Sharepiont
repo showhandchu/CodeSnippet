@@ -25,6 +25,16 @@ function GetIdFromPeoplePicker(divId) {
     }
 }
 
+//Clear people picker
+function ClearPeoplePicker(id) {
+    //id is people picker id
+    var ppobject = SPClientPeoplePicker.SPClientPeoplePickerDict[id + "_TopSpan"];
+    while (ppobject.TotalUserCount > 0) {
+        ppobject.DeleteProcessedUser();
+    }
+    //ppobject.DeleteProcessedUser()
+}
+
 //Get user id from email address
 // username should be passed as email address
 function GetUserId(userName) {
