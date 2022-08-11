@@ -1,0 +1,394 @@
+<script type="text/javascript" src="../js/jquery-3.2.1.min.js"></script>
+<script type="text/javascript" src="../js/jquery.SPServices-2014.02.js"></script>
+	
+<script type="text/javascript" src="../_layouts/15/sp.runtime.js"></script>
+<script type="text/javascript" src="../_layouts/15/sp.js"></script>
+<script type="text/javascript" src="../_layouts/15/strings.js"></script>
+<script type="text/javascript" src="../_layouts/15/clienttemplates.js"></script>
+<script type="text/javascript" src="../_layouts/15/clientforms.js"></script>
+<script type="text/javascript" src="../_layouts/15/clientpeoplepicker.js"></script>
+<script type="text/javascript" src="../_layouts/15/autofill.js"></script>
+<script type="text/javascript" src="../_layouts/15/sp.core.js"></script>
+<script type="text/javascript" src="../_layouts/15/sp.init.js"></script>
+<script type="text/javascript" src="../_layouts/15/SP.UI.Dialog.js"></script>
+<script>
+    var tasks = [];
+    var resultDivId = "userinfo";
+    
+	$(function () {
+	    $("#ctl00_PlaceHolderMain_WikiField").append("<div id='peoplepicker'></div>");
+	    $("#ctl00_PlaceHolderMain_WikiField").append("<button type='button' id='btnGet'>get user id(siteusers)</button>");
+	    $("#ctl00_PlaceHolderMain_WikiField").append("<button type='button' id='btnGet2'>get user id(SiteUserInfoList)</button>");
+	    $("#ctl00_PlaceHolderMain_WikiField").append("<pre id='" + resultDivId + "'></pre>");
+	    $("#ctl00_PlaceHolderMain_WikiField").append("<button type='button' id='btnAddFile'>Add file input</button>");
+	    
+		
+	    var schema = {};
+	    schema['PrincipalAccountType'] = 'User,DL,SecGroup,SPGroup';//,DL,SecGroup,SPGroup  
+	    schema['SearchPrincipalSource'] = 15;
+	    schema['ResolvePrincipalSource'] = 15;
+	    schema['AllowMultipleValues'] = false;
+	    schema['MaximumEntitySuggestions'] = 50;
+	    schema['Width'] = '480px';
+	    SPClientPeoplePicker_InitStandaloneControlWrapper("peoplepicker", null, schema);
+	});
+	
+	$(document).on("click", "#btnGet", function () {
+	    $("#"+resultDivId).empty();
+	    if ($("#peoplepicker_TopSpan_HiddenInput").val() != "") {
+	        var peopleData = JSON.parse($("#peoplepicker_TopSpan_HiddenInput").val());
+
+	        for (var i = 0; i < peopleData.length; i++) {
+	            var key = peopleData[i].Key;
+	            //key value ,ex:i:0#.f|membership|xxxxx.xxx@xxxx.com
+	            //var prefix = "i:0#.f|membership|";
+
+	            $("#" + resultDivId).append("<pre style='color:" + generateDarkColorHex() + "'>" + JSON.stringify(peopleData[i], null, 4) + "</pre>");
+
+	            /// get the site url
+	            var siteUrl = _spPageContextInfo.siteAbsoluteUrl;
+	            var accountName = key;
+
+	            $.ajax({
+	                url: siteUrl + "/_api/web/siteusers(@v)?@v='" +
+                        encodeURIComponent(accountName) + "'",
+	                method: "GET",
+	                headers: { "Accept": "application/json; odata=verbose" },
+	                success: function (data) {
+	                    console.info(data);
+	                    $("#" + resultDivId).append("<pre style='color:" + generateDarkColorHex() + "'>" + JSON.stringify(data.d, null, 4) + "</pre>");
+
+	                },
+	                error: function (data) {
+	                    console.log(JSON.stringify(data));
+	                    $("#" + resultDivId).append(JSON.stringify(data, null, 4));
+	                }
+	            });
+	        }
+	    }
+
+
+	});
+
+	$(document).on("click", "#btnGet2", function () {
+	    $("#" + resultDivId).empty();
+	    if ($("#peoplepicker_TopSpan_HiddenInput").val() != "") {
+	        var peopleData = JSON.parse($("#peoplepicker_TopSpan_HiddenInput").val());
+	        spUser = {};
+	        for (var i = 0; i < peopleData.length; i++) {
+	            var key = peopleData[i].Key;
+	            //key value ,ex:i:0#.f|membership|xxxxx.xxx@xxxx.com
+	            //var prefix = "i:0#.f|membership|";
+
+	            $("#" + resultDivId).append("<pre style='color:" + generateDarkColorHex() + "'>" + JSON.stringify(peopleData[i], null, 4) + "</pre>");
+
+	            /// get the site url
+	            var siteUrl = _spPageContextInfo.siteAbsoluteUrl;
+	            //var accountName = peopleData[i].DisplayText;
+
+	            //$.ajax({
+	            //    url: siteUrl + "/_api/web/SiteUserInfoList/items?$select=Id,Title,Office&$filter=Title eq '" + accountName + "'",
+	            //    method: "GET",
+	            //    headers: { "Accept": "application/json; odata=verbose" },
+	            //    success: function (data) {
+	            //        console.info(data);
+	            //        $("#userinfo").append("<pre style='color:" + generateDarkColorHex() + "'>" + JSON.stringify(data.d, null, 4) + "</pre>");
+
+	            //    },
+	            //    error: function (data) {
+	            //        console.log(JSON.stringify(data));
+	            //        $("#userinfo").append(JSON.stringify(data, null, 4));
+	            //    }
+	            //});
+	            tasks.push(getUserId(key));
+	        }
+	        $.when.apply($, tasks)
+              .then(function () {
+                  console.info("all done");
+                  
+              }, function (error) {
+                  console.info(error);
+              }).always(function () {
+                  console.info("finally");
+                  for (var i in spUser) {
+                      //console.info(i);
+                      spUser[i].get_objectData();
+                      var userobjectdata = spUser[i].get_objectData();
+                      if ($.isEmptyObject(userobjectdata.$K_0)) {
+                          console.info(i + " could not be found");
+                          continue;
+                      }
+                      console.info(spUser[i].get_id());
+                  }
+              });
+	    }
+
+
+	});
+
+	$(document).on("click", "#btnAddFile", function () {
+	    AddFileInput();
+	});
+	
+	var spUser = {};
+
+	function getUserId(loginName) {
+        //如果用rest api會有沒有使用過sharepoint的使用者無法搜尋到的問題，暫時只能用下面這個方法
+	    return $.Deferred(function (dfd) {
+	        var context = new SP.ClientContext.get_current();
+	        spUser[loginName] = context.get_web().ensureUser(loginName);
+	        context.load(spUser[loginName]);
+	        context.executeQueryAsync(
+                Function.createDelegate(null, function ensureUserSuccess(data) {
+                    //console.info(data);
+                    dfd.resolve();
+                }),
+                Function.createDelegate(null, function onFail(sender, args) {
+                    console.info("error");
+                    console.info(sender);
+                    console.info(args.get_message());
+                    dfd.reject(sender, args);
+                })
+            );
+	    }).promise();
+	}
+
+	
+	
+    function generateDarkColorHex() {
+        let color = "#";
+        for (let i = 0; i < 3; i++)
+            color += ("0" + Math.floor(Math.random() * Math.pow(16, 2) / 2).toString(16)).slice(-2);
+        return color;
+    }
+	
+    function GetItemTypeForListName(name) {
+        //rest api insert or update need add this information for column __metadata.type
+		return "SP.Data." + name.charAt(0).toUpperCase() + name.split(" ").join("_x0020_").slice(1) + "ListItem";
+	}
+
+	function UpdateListItem(listName, id, datas) {
+        //以下註解的這個方法如果第一次有欄位錯誤，後面修正後再執行，還是會一直顯示第一次的錯誤，暫時無法解決
+	    //var clientContext = new SP.ClientContext.get_current();
+	    //var list = clientContext.get_web().get_lists().getByTitle(listName);
+	    //var listItem = list.getItemById(id);
+	    //for (var i in datas) {
+	    //    listItem.set_item(i, datas[i]);
+	    //}
+	    //listItem.update();
+	    //clientContext.executeQueryAsync(Function.createDelegate(this, function onQuerySucceeded() {
+	    //    console.info('Item updated successfully !');
+	    //}), Function.createDelegate(this, function onQueryFailed(sender, args) {
+	    //    console.info('Could not able to update item: ' + args.get_message());
+	    //})
+	    //);
+	    datas["__metadata"] = {
+	        type: GetItemTypeForListName(listName)
+	    };
+	    return $.ajax({
+	        url: _spPageContextInfo.webAbsoluteUrl + "/_api/web/lists/getByTitle('" + listName + "')/items(" + id + ")",
+	        type: "POST",
+	        headers:
+			{
+			    // Accept header: Specifies the format for response data from the server.
+			    "Accept": "application/json;odata=verbose",
+			    //Content-Type header: Specifies the format of the data that the client is sending to the server
+			    "Content-Type": "application/json;odata=verbose",
+			    // IF-MATCH header: Provides a way to verify that the object being changed has not been changed since it was last retrieved.
+			    // "IF-MATCH":"*", will overwrite any modification in the object, since it was last retrieved.
+			    "IF-MATCH": "*",
+			    //X-HTTP-Method:  The MERGE method updates only the properties of the entity , while the PUT method replaces the existing entity with a new one that you supply in the body of the POST
+			    "X-HTTP-Method": "MERGE",
+			    // X-RequestDigest header: When you send a POST request, it must include the form digest value in X-RequestDigest header
+			    "X-RequestDigest": $("#__REQUESTDIGEST").val()
+			},
+	        data: JSON.stringify(datas)
+	    });
+	}
+
+    function DisplayListItem(listName, columns) {
+        var clientContext = new SP.ClientContext();
+        var oList = clientContext.get_web().get_lists().getByTitle(listName);
+        var camlQuery = new SP.CamlQuery();
+        //camlQuery.set_viewXml(
+        //'<View><Query></Query>' +
+        //'<RowLimit>10</RowLimit></View>');
+        collListItem = oList.getItems(camlQuery);
+        clientContext.load(collListItem);
+        clientContext.executeQueryAsync(
+            Function.createDelegate(this, function onQuerySucceeded(sender, args) {
+                var listItemInfo = "";
+                var listItemEnumerator = collListItem.getEnumerator();
+                while (listItemEnumerator.moveNext()) {
+                    var oListItem = listItemEnumerator.get_current();
+                    listItemInfo += '<strong>ID: </strong> ' + oListItem.get_id();
+                    for (var i = 0; i < columns.length; i++) {
+                        if ("Author,Editor".indexOf(columns[i]) > -1) {
+                            listItemInfo += ' <strong>' + columns[i] + ':</strong> ' + oListItem.get_item(columns[i]).get_lookupValue();
+                        } else {
+                            listItemInfo += ' <strong>' + columns[i] + ':</strong> ' + oListItem.get_item(columns[i]);
+                        }
+                        
+                    }
+                    listItemInfo += '<br />';
+                }
+                $("#" + resultDivId).html(listItemInfo);
+            }), Function.createDelegate(this, function onQueryFailed(sender, args) {
+                alert('Request failed. ' + args.get_message() +
+                '\n' + args.get_stackTrace());
+            })
+        );
+    }
+
+    function CreateListItem(listName, datas) {
+        var context = new SP.ClientContext.get_current();
+        var lstObject = context.get_web().get_lists().getByTitle(listName);
+        var listItemCreationInfo = new SP.ListItemCreationInformation();
+        var newItem = lstObject.addItem(listItemCreationInfo);
+        for (var i in datas) {
+            newItem.set_item(i, datas[i]);
+        }
+        newItem.update();
+        context.executeQueryAsync(Function.createDelegate(this, function onSuccess() {
+            console.info('Item created');
+        }),
+        Function.createDelegate(this, function onFailure(sender, args) {
+            console.info('Request failed. ' + args.get_message() + '\n' + args.get_stackTrace());
+        }));
+    }
+
+    function GetItemById(listName, id) {
+        var siteUrl = _spPageContextInfo.webAbsoluteUrl;
+        return $.ajax({
+            url: siteUrl + "/_api/web/lists/getbytitle('" + listName + "')/items(" + id + ")",
+            method: "GET",
+            headers: { "Accept": "application/json; odata=verbose" }
+        });
+    }
+
+    function GetItemAttachments(listName, id) {
+        return $.ajax({
+            url: _spPageContextInfo.webAbsoluteUrl + "/_api/web/lists/getbytitle('" + listName + "')/items(" + id + ")/AttachmentFiles",
+            method: "GET",
+            headers: { "Accept": "application/json; odata=verbose" },
+            //success: function (data) {
+            //    $.each(data.d.results, function () {
+            //        uploadedFileName.push(this.FileName);
+            //        $("#files_place").append('<div class="uploaded_image"><img class="delete-file" item-id="' + id + '" title="Click here to delete the file." alt="Click here to delete the file." style="cursor: hand;border:none;vertical-align:middle;margin-right:1px;" src="/_layouts/15/inc/ipfsfileattachmentdelete.png?rev=k8gGqtz18Fkdf5pRLXlvMDuaCmr71WlNu2ftQlxwlzlC8RBAnw9Ml6zEojroWncb%2BrQ2LK%2BXHTrNHUy227HTjQ%3D%3D" data-themekey="#"><span class="filename"><a href="' + this.ServerRelativeUrl + '">' + this.FileName + '</a></span></div>');
+            //    })
+            //    if (currentItem["SubmitVerify"] == "true") {
+            //        $(".delete-file").hide();
+            //    }
+            //},
+            //error: function (data) {
+            //    //ShowErrorDialogCore("Warning", errJson.error.message.value, null);
+            //}
+        });
+    }
+
+    function uploadFile(listName, id, file) {
+        var getFileBuffer = function (file) {
+
+            var deferred = $.Deferred();
+            var reader = new FileReader();
+
+            reader.onload = function (e) {
+                deferred.resolve(e.target.result);
+            }
+            reader.onerror = function (e) {
+                deferred.reject(e.target.error);
+            }
+            reader.readAsArrayBuffer(file);
+            return deferred.promise();
+        };
+        return $.Deferred(function (dfd) {
+            getFileBuffer(file).then(function (buffer) {
+                $.ajax({
+                    url: _spPageContextInfo.webAbsoluteUrl + "/_api/web/lists/getbytitle('" + listName + "')/items(" + id + ")/AttachmentFiles/add(FileName='" + file.name + "')",
+                    method: 'POST',
+                    async: false,//用非同步會出錯，所以這邊要放false
+                    data: buffer,
+                    processData: false,
+                    headers: {
+                        "Accept": "application/json; odata=verbose",
+                        "content-type": "application/json; odata=verbose",
+                        "X-RequestDigest": document.getElementById("__REQUESTDIGEST").value
+                    }
+                    , success: function onAttachmentSucess() {
+                        console.info(file.name + " success");
+                        dfd.resolve();
+                        //fileUploadeCount++;
+                        //if (arraycount == fileUploadeCount) {
+                        //    console.log('uploaded successfully');
+                        //    returnToIndex();
+                        //}
+                    }
+                    , error: function (jqXHR, textStatus, errorThrown) {
+                        errorUpload.push({ "FileName": file.name, "Error": jqXHR.responseJSON.error.message.value });
+                        //console.info(file.name + " " + jqXHR.responseJSON.error.message.value);
+                        dfd.reject();
+                        //console.info(file.name + " error");
+                        //console.info(textStatus);
+                        //console.info(errorThrown);
+                    }
+                });
+            });
+        }).promise();
+        
+    }
+
+    function AddFileInput() {
+        var idx = $("input:file").length+1;
+        $("#ctl00_PlaceHolderMain_WikiField").append($('<input/>').attr('type', 'file').attr('name', 'f' + idx));
+    }
+    
+    
+    var errorUpload = [];
+    var fileArray = [];
+    function UploadAllFilesToSharepointListItem(listName, id) {
+        errorUpload = [];
+        fileArray = [];
+        $("input:file").each(function () {
+            if ($(this)[0].files[0]) {
+                fileArray.push({ "Attachment": $(this)[0].files[0] });
+            }
+        });
+        
+        var tasks = [];
+        for (var i = 0; i < fileArray.length; i++) {
+            tasks.push(uploadFile(listName, id, fileArray[i].Attachment));
+        }
+        $.when.apply($, tasks).then(function () {
+            console.info("all done");
+        }, function (error) {
+            console.info("something error");
+        }).always(function () {
+            console.info(errorUpload);
+            console.info("finally");
+
+        });
+    }
+	
+	
+	function DeleteItemAttachment(listName, id, fileName) {
+		var Url = _spPageContextInfo.webAbsoluteUrl + "/_api/web/lists/GetByTitle('" + listName + "')/GetItemById(" + id + ")/AttachmentFiles/getByFileName('" + fileName + "')  ";
+		return $.ajax({
+			url: Url,
+			type: 'DELETE',
+			contentType: 'application/json;odata=verbose',
+			async: false,//用非同步會出錯，所以這邊要放false
+			headers: {
+				'X-RequestDigest': $('#__REQUESTDIGEST').val(),
+				'X-HTTP-Method': 'DELETE',
+				'Accept': 'application/json;odata=verbose'
+			},
+			success: function (data) {
+				console.info(data);
+			},
+			error: function (error) {
+				console.info(error);
+			}
+		});
+	}
+
+</script>
