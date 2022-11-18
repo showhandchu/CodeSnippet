@@ -1,0 +1,29 @@
+Sub CalculateRunTime_Seconds()
+  StartTime = Timer
+  'Code in here
+  SecondsElapsed = Round(Timer - StartTime, 2)
+  estimatedTime = Application.Evaluate("TEXT(" & lrow * CDbl(SecondsElapsed) / 86400 & ", ""mm:ss"")")
+  msgboxText = "Estimated to take " & estimatedTime & ". Are you sure you want to execute?"
+Exit Sub
+
+Sub DownloadImageFromUrl()
+  Dim FileNum As Long
+  Dim TempFile As String
+  Dim FileData() As Byte
+  Dim WHTTP As Object
+  Set WHTTP = CreateObject("WinHTTP.WinHTTPrequest.5.1")
+  imgURL = "http://10.88.10.99:8057/barcode/get?width=250&height=50&data=" & barcodeValue
+
+  WHTTP.Open "GET", imgURL, False
+  WHTTP.Send
+  FileData = WHTTP.ResponseBody
+  Set WHTTP = Nothing
+
+  FileNum = FreeFile
+  TempFile = tmpFileName 'file name
+  Open TempFile For Binary Access Write As #FileNum
+      Put #FileNum, 1, FileData
+  Close #FileNum
+  'SetAttr tmpFileName, vbNormal
+  'Kill tmpFileName
+Exit Sub
